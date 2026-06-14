@@ -91,6 +91,10 @@ Use this repo as a Cursor plugin, or copy it into your local plugin directory.
 It exposes the same `skills/`, `.cursor/rules/`, and Cursor-native hooks via
 `.cursor-plugin/plugin.json`.
 
+Cursor hooks add mode activation at session start, `/ponytail` mode tracking
+before prompt submission, a dependency-install approval gate, a compaction
+reminder, and session cleanup.
+
 ### Pi agent harness
 
 ```

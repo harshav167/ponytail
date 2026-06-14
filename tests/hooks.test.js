@@ -75,24 +75,54 @@ output = JSON.parse(result.stdout);
 assert.match(output.additional_context, /PONYTAIL MODE ACTIVE — level: lite/);
 
 result = run(
-  'ponytail-mode-tracker.js',
+  'cursor-mode-tracker.js',
   cursorEnv,
   JSON.stringify({ prompt: '/ponytail ultra' }),
 );
 assert.equal(result.status, 0, result.stderr);
 assert.equal(fs.readFileSync(cursorState, 'utf8'), 'ultra');
 output = JSON.parse(result.stdout);
-assert.match(output.additional_context, /PONYTAIL MODE CHANGED — level: ultra/);
+assert.equal(output.continue, true);
 
 result = run(
-  'ponytail-mode-tracker.js',
+  'cursor-mode-tracker.js',
   cursorEnv,
   JSON.stringify({ prompt: 'stop ponytail' }),
 );
 assert.equal(result.status, 0, result.stderr);
 assert.equal(fs.existsSync(cursorState), false);
 output = JSON.parse(result.stdout);
-assert.equal(output.additional_context, 'PONYTAIL MODE OFF');
+assert.equal(output.continue, true);
+
+result = run(
+  'cursor-guard-shell.js',
+  cursorEnv,
+  JSON.stringify({ command: 'npm install left-pad' }),
+);
+assert.equal(result.status, 0, result.stderr);
+output = JSON.parse(result.stdout);
+assert.equal(output.permission, 'ask');
+assert.match(output.agent_message, /Ponytail ladder/);
+
+result = run(
+  'cursor-guard-shell.js',
+  cursorEnv,
+  JSON.stringify({ command: 'npm test' }),
+);
+assert.equal(result.status, 0, result.stderr);
+output = JSON.parse(result.stdout);
+assert.equal(output.permission, 'allow');
+
+result = run('cursor-pre-compact.js', cursorEnv);
+assert.equal(result.status, 0, result.stderr);
+output = JSON.parse(result.stdout);
+assert.match(output.user_message, /Ponytail still applies/);
+
+fs.mkdirSync(path.dirname(cursorState), { recursive: true });
+fs.writeFileSync(cursorState, 'full');
+result = run('cursor-session-end.js', cursorEnv);
+assert.equal(result.status, 0, result.stderr);
+assert.equal(fs.existsSync(cursorState), false);
 
 const claudeEnv = {
   HOME: home,

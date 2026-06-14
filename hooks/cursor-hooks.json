@@ -7,9 +7,29 @@
         "timeout": 5
       }
     ],
+    "sessionEnd": [
+      {
+        "command": "bun ${CURSOR_PLUGIN_ROOT}/hooks/cursor-session-end.js",
+        "timeout": 5
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "bun ${CURSOR_PLUGIN_ROOT}/hooks/cursor-guard-shell.js",
+        "matcher": "\\b(npm|pnpm|yarn|bun)\\s+(install|add)\\b|\\bpip\\s+install\\b|\\bpoetry\\s+add\\b|\\bgo\\s+get\\b|\\bcargo\\s+add\\b",
+        "timeout": 5
+      }
+    ],
     "beforeSubmitPrompt": [
       {
-        "command": "bun ${CURSOR_PLUGIN_ROOT}/hooks/ponytail-mode-tracker.js",
+        "command": "bun ${CURSOR_PLUGIN_ROOT}/hooks/cursor-mode-tracker.js",
+        "matcher": "UserPromptSubmit",
+        "timeout": 5
+      }
+    ],
+    "preCompact": [
+      {
+        "command": "bun ${CURSOR_PLUGIN_ROOT}/hooks/cursor-pre-compact.js",
         "timeout": 5
       }
     ]
