@@ -60,6 +60,40 @@ assert.equal(fs.existsSync(codexState), false);
 output = JSON.parse(result.stdout);
 assert.equal(output.systemMessage, 'PONYTAIL:OFF');
 
+const cursorEnv = {
+  HOME: home,
+  USERPROFILE: home,
+  CURSOR_PLUGIN_ROOT: root,
+  PONYTAIL_DEFAULT_MODE: 'lite',
+};
+const cursorState = path.join(home, '.cursor', '.ponytail-active');
+
+result = run('ponytail-activate.js', cursorEnv);
+assert.equal(result.status, 0, result.stderr);
+assert.equal(fs.readFileSync(cursorState, 'utf8'), 'lite');
+output = JSON.parse(result.stdout);
+assert.match(output.additional_context, /PONYTAIL MODE ACTIVE — level: lite/);
+
+result = run(
+  'ponytail-mode-tracker.js',
+  cursorEnv,
+  JSON.stringify({ prompt: '/ponytail ultra' }),
+);
+assert.equal(result.status, 0, result.stderr);
+assert.equal(fs.readFileSync(cursorState, 'utf8'), 'ultra');
+output = JSON.parse(result.stdout);
+assert.match(output.additional_context, /PONYTAIL MODE CHANGED — level: ultra/);
+
+result = run(
+  'ponytail-mode-tracker.js',
+  cursorEnv,
+  JSON.stringify({ prompt: 'stop ponytail' }),
+);
+assert.equal(result.status, 0, result.stderr);
+assert.equal(fs.existsSync(cursorState), false);
+output = JSON.parse(result.stdout);
+assert.equal(output.additional_context, 'PONYTAIL MODE OFF');
+
 const claudeEnv = {
   HOME: home,
   USERPROFILE: home,

@@ -85,6 +85,12 @@ codex
 Open `/plugins`, select the Ponytail marketplace, and install Ponytail. Then
 open `/hooks`, review and trust its two lifecycle hooks, and start a new thread.
 
+### Cursor
+
+Use this repo as a Cursor plugin, or copy it into your local plugin directory.
+It exposes the same `skills/`, `.cursor/rules/`, and Cursor-native hooks via
+`.cursor-plugin/plugin.json`.
+
 ### Pi agent harness
 
 ```
@@ -108,7 +114,7 @@ Active every session. `/ponytail-review` finds what to delete in your diff. `/po
 In Codex, invoke the skills as `@ponytail`, `@ponytail-review`, and
 `@ponytail-help`. Startup and mode-change text shows the current mode.
 
-Cursor, Windsurf, Cline, Copilot, Aider, Kiro: copy the matching rules file from this repo ([`.cursor/rules/`](.cursor/rules/), [`.windsurf/rules/`](.windsurf/rules/), [`.clinerules/`](.clinerules/), [`.github/copilot-instructions.md`](.github/copilot-instructions.md), [`AGENTS.md`](AGENTS.md), [`.kiro/steering/`](.kiro/steering/)).
+Windsurf, Cline, Copilot, Aider, Kiro: copy the matching rules file from this repo ([`.windsurf/rules/`](.windsurf/rules/), [`.clinerules/`](.clinerules/), [`.github/copilot-instructions.md`](.github/copilot-instructions.md), [`AGENTS.md`](AGENTS.md), [`.kiro/steering/`](.kiro/steering/)). Cursor can also copy [`.cursor/rules/`](.cursor/rules/) directly if you do not want the plugin hooks and skills.
 
 Kiro: copy `.kiro/steering/ponytail.md` to `~/.kiro/steering/` (global) or `.kiro/steering/` in your project.
 

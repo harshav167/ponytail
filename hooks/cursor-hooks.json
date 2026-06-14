@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "bun ${CURSOR_PLUGIN_ROOT}/hooks/ponytail-activate.js",
+        "timeout": 5
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "bun ${CURSOR_PLUGIN_ROOT}/hooks/ponytail-mode-tracker.js",
+        "timeout": 5
+      }
+    ]
+  }
+}

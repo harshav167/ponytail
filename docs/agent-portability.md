@@ -11,7 +11,7 @@ to load in a given agent.
 | Claude Code | `.claude-plugin/`, `commands/`, `hooks/` | Full plugin install with session activation, mode tracking, commands, and statusline support. |
 | Codex | `.codex-plugin/plugin.json`, `hooks/hooks.json`, `hooks/`, `skills/` | Plugin install with the same skills plus lifecycle hooks for activation and mode tracking. |
 | OpenCode | `.opencode/plugins/ponytail.mjs`, `.opencode/command/`, `hooks/`, `skills/` | Server plugin injects the ruleset each turn via `experimental.chat.system.transform` and persists `/ponytail` switches; reuses the shared instruction builder. |
-| Cursor | `.cursor/rules/ponytail.mdc` | Always-on project rule. |
+| Cursor | `.cursor-plugin/`, `.cursor/rules/`, `hooks/cursor-hooks.json`, `skills/` | Cursor plugin install with rules, skills, and lifecycle hooks; project rule still works when copied directly. |
 | Windsurf | `.windsurf/rules/ponytail.md` | Project rule. |
 | Cline | `.clinerules/ponytail.md` | Project rule. |
 | GitHub Copilot | `.github/copilot-instructions.md` | Repository instruction file. |

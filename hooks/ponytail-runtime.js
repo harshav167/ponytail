@@ -3,8 +3,11 @@ const path = require('path');
 const os = require('os');
 
 const isCodex = Boolean(process.env.PLUGIN_DATA);
+const isCursor = Boolean(process.env.CURSOR_PLUGIN_ROOT);
 const statePath = isCodex
   ? path.join(process.env.PLUGIN_DATA, '.ponytail-active')
+  : isCursor
+    ? path.join(os.homedir(), '.cursor', '.ponytail-active')
   : path.join(os.homedir(), '.claude', '.ponytail-active');
 
 function setMode(mode) {
@@ -17,6 +20,10 @@ function clearMode() {
 }
 
 function writeHookOutput(event, mode, context = '') {
+  if (isCursor) {
+    process.stdout.write(context ? JSON.stringify({ additional_context: context }) : '{}');
+    return;
+  }
   if (!isCodex) {
     process.stdout.write(context);
     return;
@@ -34,6 +41,7 @@ function writeHookOutput(event, mode, context = '') {
 module.exports = {
   clearMode,
   isCodex,
+  isCursor,
   setMode,
   writeHookOutput,
 };

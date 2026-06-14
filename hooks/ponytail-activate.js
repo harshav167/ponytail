@@ -14,6 +14,7 @@ const { getPonytailInstructions } = require('./ponytail-instructions');
 const {
   clearMode,
   isCodex,
+  isCursor,
   setMode,
   writeHookOutput,
 } = require('./ponytail-runtime');
@@ -41,7 +42,7 @@ try {
 let output = getPonytailInstructions(mode);
 
 // 3. Detect missing statusline config — nudge Claude to help set it up
-if (!isCodex) try {
+if (!isCodex && !isCursor) try {
   let hasStatusline = false;
   if (fs.existsSync(settingsPath)) {
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
