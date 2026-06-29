@@ -3,13 +3,17 @@ const path = require('path');
 const os = require('os');
 const { getClaudeDir } = require('./ponytail-config');
 
-const isCodex = Boolean(process.env.PLUGIN_DATA);
+const STATE_FILE = '.ponytail-active';
+const isCopilot = Boolean(process.env.COPILOT_PLUGIN_DATA);
+const isCodex = !isCopilot && Boolean(process.env.PLUGIN_DATA);
 const isCursor = Boolean(process.env.CURSOR_PLUGIN_ROOT);
-const statePath = isCodex
-  ? path.join(process.env.PLUGIN_DATA, '.ponytail-active')
-  : isCursor
-    ? path.join(os.homedir(), '.cursor', '.ponytail-active')
-  : path.join(getClaudeDir(), '.ponytail-active');
+
+let stateDir = getClaudeDir();
+if (isCodex) stateDir = process.env.PLUGIN_DATA;
+if (isCopilot) stateDir = process.env.COPILOT_PLUGIN_DATA;
+if (isCursor) stateDir = path.join(os.homedir(), '.cursor');
+
+const statePath = path.join(stateDir, STATE_FILE);
 
 function setMode(mode) {
   fs.mkdirSync(path.dirname(statePath), { recursive: true });
@@ -20,29 +24,53 @@ function clearMode() {
   try { fs.unlinkSync(statePath); } catch (e) {}
 }
 
+// Live mode written by activate/mode-tracker. Absent flag = ponytail off.
+function readMode() {
+  try {
+    return fs.readFileSync(statePath, 'utf8').trim() || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 function writeHookOutput(event, mode, context = '') {
   if (isCursor) {
     process.stdout.write(context ? JSON.stringify({ additional_context: context }) : '{}');
     return;
   }
-  if (!isCodex) {
-    process.stdout.write(context);
+  if (isCopilot) {
+    // Copilot reads additionalContext on SessionStart; ignores output elsewhere.
+    process.stdout.write(JSON.stringify(
+      event === 'SessionStart' && context ? { additionalContext: context } : {}));
     return;
   }
-  const output = { systemMessage: `PONYTAIL:${mode.toUpperCase()}` };
-  if (context) {
-    output.hookSpecificOutput = {
-      hookEventName: event,
-      additionalContext: context,
-    };
+  if (isCodex) {
+    const output = { systemMessage: `PONYTAIL:${mode.toUpperCase()}` };
+    if (context) {
+      output.hookSpecificOutput = {
+        hookEventName: event,
+        additionalContext: context,
+      };
+    }
+    process.stdout.write(JSON.stringify(output));
+    return;
   }
-  process.stdout.write(JSON.stringify(output));
+  // Native Claude: SessionStart accepts raw stdout, but SubagentStart needs the
+  // hookSpecificOutput JSON form or the context is dropped.
+  if (event === 'SubagentStart') {
+    process.stdout.write(JSON.stringify(
+      { hookSpecificOutput: { hookEventName: event, additionalContext: context } }));
+    return;
+  }
+  process.stdout.write(context);
 }
 
 module.exports = {
   clearMode,
   isCodex,
+  isCopilot,
   isCursor,
+  readMode,
   setMode,
   writeHookOutput,
 };

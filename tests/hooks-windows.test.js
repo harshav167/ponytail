@@ -11,9 +11,15 @@ const fs = require('fs');
 const path = require('path');
 
 const root = path.join(__dirname, '..');
-const HOOKS_JSON = 'hooks/hooks.json';
+const HOOKS_JSON = 'hooks/claude-codex-hooks.json';
+const HOST_PLUGIN_MANIFESTS = [
+  '.claude-plugin/plugin.json',
+  '.codex-plugin/plugin.json',
+];
 // cmd.exe variable syntax (%FOO%); PowerShell leaves it literal, breaking the path.
 const CMD_VAR_SYNTAX = /%[A-Za-z_][A-Za-z0-9_]*%/;
+// PowerShell 5.1 rejects these POSIX shell guards when a host runs `command`.
+const POSIX_GUARD_SYNTAX = /\bcommand\s+-v\b|&&|\|\||>\/dev\/null|2>&1/;
 // Pull the hooks/<script> a command launches, so we can check it exists.
 const HOOK_SCRIPT = /hooks[\\/]([\w.-]+\.(?:js|mjs|cjs|ps1|sh))/;
 
@@ -36,6 +42,26 @@ test('every commandWindows uses PowerShell $env: syntax, not cmd.exe %VAR%', () 
   }
 });
 
+test('shared hook commands avoid POSIX-only guard syntax', () => {
+  const commands = commandHooks()
+    .map((h) => h.command)
+    .filter(Boolean);
+  assert.ok(commands.length > 0, 'expected at least one shared command entry');
+  for (const cmd of commands) {
+    assert.doesNotMatch(cmd, POSIX_GUARD_SYNTAX, `command uses POSIX-only guard syntax: ${cmd}`);
+  }
+});
+
+test('shared hook commands keep lifecycle hooks non-blocking', () => {
+  const commands = commandHooks()
+    .map((h) => h.command)
+    .filter(Boolean);
+  assert.ok(commands.length > 0, 'expected at least one shared command entry');
+  for (const cmd of commands) {
+    assert.match(cmd, /;\s*exit 0$/, `command must exit successfully if node or the hook script fails: ${cmd}`);
+  }
+});
+
 test('every hook command points at a script that ships in hooks/', () => {
   for (const hook of commandHooks()) {
     for (const cmd of [hook.command, hook.commandWindows].filter(Boolean)) {
@@ -44,5 +70,12 @@ test('every hook command points at a script that ships in hooks/', () => {
       const script = path.join(root, 'hooks', match[1]);
       assert.ok(fs.existsSync(script), `command references a missing hook script: ${match[1]}`);
     }
+  }
+});
+
+test('Claude and Codex manifests point at the shared host-specific hook config', () => {
+  for (const rel of HOST_PLUGIN_MANIFESTS) {
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, rel), 'utf8'));
+    assert.equal(manifest.hooks, `./${HOOKS_JSON}`, `${rel} must not rely on root hooks auto-discovery`);
   }
 });

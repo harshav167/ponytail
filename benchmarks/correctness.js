@@ -13,7 +13,11 @@ const path = require('path');
 
 // Extract fenced code blocks, tagged by language.
 function extractBlocks(text) {
-  const matches = [...text.matchAll(/```(\w*)\n([\s\S]*?)```/g)];
+  text = String(text || '');
+  const matches = [...text.matchAll(/```(\w*)\r?\n([\s\S]*?)```/g)];
+  // ponytail: terse models often answer with bare, unfenced code. Treat the whole
+  // response as one block so the gate scores the code instead of reporting "no block".
+  if (matches.length === 0 && text.trim()) return [{ lang: '', code: text }];
   return matches.map((m) => ({ lang: (m[1] || '').toLowerCase(), code: m[2] }));
 }
 
@@ -36,6 +40,20 @@ function exec(cmd, opts = {}) {
   } catch (e) {
     return { ok: false, stderr: (e.stderr || e.message || '').slice(0, 500) };
   }
+}
+
+// ponytail: probe once at load; macOS and many Linux images ship python3 only.
+let pythonCmd;
+function python() {
+  if (pythonCmd) return pythonCmd;
+  for (const cmd of ['python3', 'python']) {
+    if (exec(`${cmd} -c "import sys"`).ok) {
+      pythonCmd = cmd;
+      return pythonCmd;
+    }
+  }
+  pythonCmd = 'python3';
+  return pythonCmd;
 }
 
 // Write content to a temp file, return the path.
@@ -100,14 +118,14 @@ if failures:
 print("PASS")
 `;
     const f = tmpFile('.py', harness);
-    const result = exec(`python "${f}"`);
+    const result = exec(`${python()} "${f}"`);
     fs.unlinkSync(f);
     if (result.ok) return { pass: true, reason: 'Email validator passes all checks' };
     return { pass: false, reason: result.stderr || 'Email validator failed' };
   },
 
   debounce(blocks) {
-    const code = blocks.find((b) => b.lang === 'javascript' || b.lang === 'js' || (!b.lang && b.code.includes('function')));
+    const code = blocks.find((b) => b.lang === 'javascript' || b.lang === 'js' || (!b.lang && (b.code.includes('function') || b.code.includes('=>'))));
     if (!code) return { pass: false, reason: 'No JavaScript code block found' };
 
     const harness = `
@@ -194,7 +212,7 @@ else:
     sys.exit(1)
 `;
     const f = tmpFile('.py', harness);
-    const result = exec(`python "${f}"`);
+    const result = exec(`${python()} "${f}"`);
     try { fs.unlinkSync(f); } catch (e) {}
     try { fs.unlinkSync(csvPath); } catch (e) {}
     if (result.ok) return { pass: true, reason: 'CSV sum produces correct result (351)' };
