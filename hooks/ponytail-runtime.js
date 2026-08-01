@@ -1,16 +1,18 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { getClaudeDir } = require('./ponytail-config');
+const { getClaudeDir, getConfigDir } = require('./ponytail-config');
 
 const STATE_FILE = '.ponytail-active';
 const isCopilot = Boolean(process.env.COPILOT_PLUGIN_DATA);
 const isCodex = !isCopilot && Boolean(process.env.PLUGIN_DATA);
 const isCursor = Boolean(process.env.CURSOR_PLUGIN_ROOT);
+const isQoder = !isCopilot && !isCodex && Boolean(process.env.QODER_SESSION_ID);
 
 let stateDir = getClaudeDir();
 if (isCodex) stateDir = process.env.PLUGIN_DATA;
 if (isCopilot) stateDir = process.env.COPILOT_PLUGIN_DATA;
+if (isQoder) stateDir = path.join(os.homedir(), '.qoder');
 if (isCursor) stateDir = path.join(os.homedir(), '.cursor');
 
 const statePath = path.join(stateDir, STATE_FILE);
@@ -55,6 +57,19 @@ function writeHookOutput(event, mode, context = '') {
     process.stdout.write(JSON.stringify(output));
     return;
   }
+  if (isQoder) {
+    // Qoder: hookSpecificOutput JSON, same shape as Codex minus systemMessage.
+    // UserPromptSubmit additionalContext is injected into the Agent's conversation.
+    const output = {};
+    if (context) {
+      output.hookSpecificOutput = {
+        hookEventName: event,
+        additionalContext: context,
+      };
+    }
+    process.stdout.write(JSON.stringify(output));
+    return;
+  }
   // Native Claude: SessionStart accepts raw stdout, but SubagentStart needs the
   // hookSpecificOutput JSON form or the context is dropped.
   if (event === 'SubagentStart') {
@@ -70,6 +85,7 @@ module.exports = {
   isCodex,
   isCopilot,
   isCursor,
+  isQoder,
   readMode,
   setMode,
   writeHookOutput,
